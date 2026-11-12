@@ -1,0 +1,2 @@
+1.* **Açıklama:** Bir istemciden 6 saniye içinde 3'ten fazla mesaj arka arkaya hızlıca gönderildi. Sunucu 4. mesajdan itibaren mesajları engelledi ve istemci ekranına `"You try to send many messages!Please wait 6 second"` uyarısını gönderdi.
+<img width="887" height="736" alt="çok fazla mesaj gönderince , gönderilmeye çalışan mesajlar blok edilir diğer kullanıcılar hepisni görmez" src="https://github.com/user-attachments/assets/71185da7-add1-478b-94e4-01466657fc12" />

@@ -5,7 +5,8 @@
 <img width="1347" height="736" alt="farklı isimler atandı" src="https://github.com/user-attachments/assets/070e3370-62d8-4e94-bc5a-0e6da5adfc27" />
 
 3.Doğrudan bağlanan cliente * ile başlayan isim atanmaz.
-<img width="1512" height="702" alt="ile başlayamaz error fırlatır log kayıdında ve sayfa görüntüsü" src="https://github.com/user-attachments/assets/65dd2432-32fc-419c-950f-400a9dfe0e64" />
+<img width="864" height="395" alt="final" src="https://github.com/user-attachments/assets/0f9dd39f-b5b2-4a53-808b-5379451213e4" />
+
 
 
 

@@ -7,6 +7,7 @@ relay_port=38390
 server_port=38389
 relay_sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 
+
 if len(sys.argv)>1:
     relay_port=int(sys.argv[1])
 if len(sys.argv)>2:
@@ -37,6 +38,7 @@ def transmission(start,target):
     target.close()
 
 def ClientController(cli):
+    """Control of client action."""
     waterpool=b""
     try: 
         while b"\n" not in waterpool:
@@ -90,7 +92,7 @@ def ClientController(cli):
         server_sock.close()
         return 
     
-    th1=threading.Thread(target=transmission,args=(cli,server_sock))
+    th1=threading.Thread(target=transmission,args=(cli,server_sock))##2 thread for relay and normal.
     th2=threading.Thread(target=transmission,args=(server_sock,cli))
     th1.start()
     th2.start()

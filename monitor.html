@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Live Server Monitor</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        body {
+            background-color: #FAF6F0;
+            color: #2C3531;
+            height: 100vh;
+            overflow: hidden; /* Sayfayi kaydirmaya gerek kalmaz */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #app-wrapper {
+            width: 920px;
+            height: 540px;
+            background: #FFFFFF;
+            border: 1px solid #D5E0D7;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.05);
+            transition: width 0.25s ease, height 0.25s ease;
+        }
+        /* Telefon Ekrani Modu */
+        #app-wrapper.mobile-view {
+            width: 360px;
+            height: 580px;
+        }
+        header {
+            background-color: #5F7464;
+            color: #FFFFFF;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        header h2 { font-size: 15px; font-weight: 600; }
+        .top-controls { display: flex; gap: 8px; align-items: center; }
+        .badge {
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            background: #C93B3B;
+            color: #fff;
+        }
+        .badge.online { background: #88B091; }
+        .mode-btn {
+            background: #D98A9C;
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .stats-row {
+            display: flex;
+            gap: 12px;
+            padding: 12px 16px;
+            background: #E8EFEA;
+            border-bottom: 1px solid #D5E0D7;
+        }
+        .stat-box {
+            flex: 1;
+            background: #FFFFFF;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border-left: 4px solid #D98A9C;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .stat-label { font-size: 12px; color: #5F7464; font-weight: 600; }
+        .stat-val { font-size: 20px; font-weight: bold; color: #2C3531; }
+        .table-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 16px;
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th {
+            text-align: left;
+            padding: 8px;
+            background: #FAF6F0;
+            color: #5F7464;
+            position: sticky;
+            top: 0;
+            border-bottom: 2px solid #E2DCD5;
+        }
+        td { padding: 7px 8px; border-bottom: 1px solid #F0ECE6; }
+        .tag-type {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 11px;
+            background: #E8EFEA;
+            color: #5F7464;
+        }
+        .tag-priv { background: #F9E6EA; color: #B8526B; }
+        .tag-err { background: #FDE8E8; color: #C93B3B; }
+    </style>
+</head>
+<body>
+
+<div id="app-wrapper">
+    <header>
+        <h2>Server Live Monitoring</h2>
+        <div class="top-controls">
+            <span id="ws-status" class="badge">Disconnected</span>
+            <button class="mode-btn" onclick="toggleView()" id="view-btn">Phone View</button>
+        </div>
+    </header>
+
+    <div class="stats-row">
+        <div class="stat-box">
+            <span class="stat-label">Connected Users</span>
+            <span class="stat-val" id="online-count">0</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">Processed Messages</span>
+            <span class="stat-val" id="msg-count">0</span>
+        </div>
+    </div>
+
+    <div class="table-area">
+        <table>
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Type</th>
+                    <th>Sender</th>
+                    <th>Target</th>
+                    <th>Message / Event</th>
+                </tr>
+            </thead>
+            <tbody id="event-logs"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function toggleView() {
+        const wrap = document.getElementById("app-wrapper");
+        const btn = document.getElementById("view-btn");
+        wrap.classList.toggle("mobile-view");
+        btn.innerText = wrap.classList.contains("mobile-view") ? "PC View" : "Phone View";
+    }
+
+    // =========================================================================
+    // [!] SERVER.PY BAGLANTI NOKTASI: WEBSOCKET PORTU (9753)
+    // server.py icindeki ws_server = WebsocketServer(host=host, port=m_port)
+    // ve log_and_show() fonksiyonundan gelen canli veriyi burada yakaliyoruz.
+    // =========================================================================
+    const wsUrl = "ws://127.0.0.1:9753";
+    let socket;
+
+    function connectWebSocket() {
+        socket = new WebSocket(wsUrl);
+
+        socket.onopen = function() {
+            const st = document.getElementById("ws-status");
+            st.innerText = "Live (9753)";
+            st.classList.add("online");
+        };
+
+        socket.onmessage = function(event) {
+            // server.py icindeki: ws_ms = f"{time}/{type}/{sender}/{target}/{ms}/{online_user_no}/{successfull_messeage_no}"
+            const raw = event.data;
+            const parts = raw.split("/");
+            if (parts.length < 7) return;
+
+            const time = parts[0];
+            const type = parts[1];
+            const sender = parts[2];
+            const target = parts[3];
+            const onlineNo = parts[parts.length - 2];
+            const msgNo = parts[parts.length - 1];
+            // Eger mesajin icinde '/' gectiyse ortadaki parcalari birlestiriyoruz ki bozulmasin:
+            const ms = parts.slice(4, parts.length - 2).join("/");
+
+            // Canli sayaclari guncelle
+            document.getElementById("online-count").innerText = onlineNo;
+            document.getElementById("msg-count").innerText = msgNo;
+
+            // Tabloya yeni satiri ekle
+            const tbody = document.getElementById("event-logs");
+            const tr = document.createElement("tr");
+
+            let badgeClass = "tag-type";
+            if (type === "Private") badgeClass += " tag-priv";
+            if (type.includes("Limation") || type.includes("Error") || type.includes("Disconect")) badgeClass += " tag-err";
+
+            tr.innerHTML = `
+                <td>${time}</td>
+                <td><span class="${badgeClass}">${type}</span></td>
+                <td>${sender}</td>
+                <td>${target}</td>
+                <td>${ms}</td>
+            `;
+            tbody.appendChild(tr);
+
+            // Otomatik en alta kaydir (tablo icinde)
+            const tableArea = document.querySelector(".table-area");
+            tableArea.scrollTop = tableArea.scrollHeight;
+        };
+
+        socket.onclose = function() {
+            const st = document.getElementById("ws-status");
+            st.innerText = "Disconnected";
+            st.classList.remove("online");
+            setTimeout(connectWebSocket, 3000);
+        };
+    }
+
+    connectWebSocket();
+</script>
+</body>
+</html>

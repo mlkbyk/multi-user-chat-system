@@ -82,8 +82,35 @@ def listenMessage(sock):
                 messeage=rem[p2+1:]
                 print(f"{time}, {code}, {messeage}\n")
                 if gui_sender:
-                    gui_sender(code,time,messeage)
+                    if code=="6":
+                        u_id=messeage.find(":")
+                        if u_id!=-1:
+                            u_rem=messeage[u_id+1:]
+                        else:
+                            u_rem=messeage
+                        u_parts=u_rem.split(",")
+                        user_list=[]
+                        for u in u_parts:
+                            u_clean=u.strip()
+                            if u_clean!="":
+                                user_list.append(u_clean)
+                        gui_sender(code,time,user_list)
 
+                    elif code=="1":
+                        u_name=messeage.replace("Username ","")
+                        u_name=u_name.replace(" register.","")
+
+                        u_name=u_name.strip()
+                        gui_sender(code,time,messeage)
+
+
+                    elif code=="4":
+                        new_name=messeage.replace("User name change to ","")
+                        new_name=new_name.replace(".","")
+                        new_name=new_name.strip()
+                        gui_sender(code,time,messeage)     
+                    else:
+                        gui_sender(code,time,messeage)
         except:
             if gui_sender:
                 gui_sender("Error","...","Connection Error WİTH server and client.")

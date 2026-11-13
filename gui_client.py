@@ -1,8 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
 import client
-
-# Renk Paleti (Styling)
+#ai generated gui , socket process procedd in client.py
 BG_MAIN = "#FAF6F0"
 BG_HEADER = "#5F7464"
 BG_SIDE = "#E8EFEA"
@@ -14,6 +13,7 @@ TEXT_LIGHT = "#FFFFFF"
 
 is_mobile_mode = False
 selected_target = "All (Public)"
+login_error_shown = False
 
 root = tk.Tk()
 root.title("Multi-User Chat Application")
@@ -22,8 +22,6 @@ root.configure(bg=BG_MAIN)
 root.resizable(False, False)
 
 
-# --- Hazır Veriyi Ekranda Gösteren Saf UI Fonksiyonları ---
-
 def append_chat(text, tag="pub"):
     chat_display.config(state=tk.NORMAL)
     chat_display.insert(tk.END, text + "\n", tag)
@@ -31,9 +29,13 @@ def append_chat(text, tag="pub"):
     chat_display.config(state=tk.DISABLED)
 
 
-def show_main_chat(username):
+def update_user_header(username):
     root.title(f"Chat - {username}")
     status_label.config(text=f"Connected as: {username}")
+
+
+def show_main_chat(username):
+    update_user_header(username)
     login_frame.place_forget()
     build_layout()
 
@@ -55,38 +57,60 @@ def set_target(name):
         target_indicator.config(text=f"Private to: {name}", fg=ACCENT_DARK)
 
 
-# --- client.py'den Gelen Veriyi Ekrana Yansıtan Bağlantı ---
-# Not: client.py içindeki gui_sender(code, time, messeage) çağrısını karşılar.
 def receive_from_client(code, time, messeage):
+    root.after(0, process_incoming, code, time, messeage)
+
+
+def process_incoming(code, time, messeage):
+    global login_error_shown
     if code == "1":
-        show_main_chat( entry_name.get().strip() )
+        login_error_shown = False
+        assigned_name = messeage.replace("Username ", "").replace(" register.", "").strip()
+        if not assigned_name:
+            assigned_name = entry_name.get().strip()
+        show_main_chat(assigned_name)
         append_chat(f"[{time}] {messeage}", "sys")
     elif code == "2":
         append_chat(f"[{time}] {messeage}", "pub")
     elif code == "3":
         append_chat(f"[{time}] [PRIVATE] {messeage}", "priv")
     elif code == "4":
+        if "Username changed to " in messeage:
+            new_assigned = messeage.replace("Username changed to ", "").rstrip(".").strip()
+            if new_assigned:
+                update_user_header(new_assigned)
         append_chat(f"[{time}] {messeage}", "sys")
     elif code == "6":
-        # Kullanici listesi string'ini listeye cevirme islemini client.py'de yapip
-        # buraya liste olarak gonderebilir veya kendi kodunla ayristirabilirsin:
         users = messeage.replace("Online users: ", "").split(",")
         clean_users = [u.strip() for u in users if u.strip()]
         refresh_user_list(clean_users)
     elif code in ("Error", "Eror", "Closed"):
-        append_chat(f"[{time}] [{code}] {messeage}", "err")
+        if login_frame.winfo_ismapped():
+            if code in ("Error", "Eror"):
+                login_error_shown = True
+                messagebox.showerror("Error", messeage)
+            elif code == "Closed" and not login_error_shown:
+                messagebox.showerror("Connection Error", messeage)
+        else:
+            append_chat(f"[{time}] [{code}] {messeage}", "err")
+
 
 client.gui_sender = receive_from_client
 
 
-# --- Butonların Doğrudan client.py Fonksiyonlarını Çağırması ---
-
 def handle_connect(event=None):
+    global login_error_shown
+    login_error_shown = False
     name = entry_name.get().strip()
     ip = entry_ip.get().strip()
     port_str = entry_port.get().strip()
-    if name and port_str.isdigit():
+    if not name:
+        messagebox.showerror("Error", "Username cannot be empty.")
+        return
+    if port_str.isdigit():
         client.connectServer(name, ip, int(port_str))
+    else:
+        messagebox.showerror("Error", "Port must be a number.")
 
 
 def connect_via_relay():
@@ -178,7 +202,6 @@ def build_layout():
         send_btn.place(x=272, y=335, width=68, height=36)
 
 
-# --- Ana Sohbet Ekranı Görsel Bileşenleri (Widgets) ---
 header_bar = tk.Frame(root, bg=BG_HEADER)
 status_label = tk.Label(header_bar, text="Connected", bg=BG_HEADER, fg=TEXT_LIGHT, font=("Segoe UI", 10, "bold"))
 mode_btn = tk.Button(header_bar, text="Phone View", bg=BG_SIDE, fg=TEXT_DARK, font=("Segoe UI", 8, "bold"), relief="flat", command=toggle_view_mode)
@@ -205,8 +228,6 @@ msg_entry = tk.Entry(chat_panel, bg=BG_CHAT, fg=TEXT_DARK, font=("Segoe UI", 10)
 msg_entry.bind("<Return>", handle_send)
 send_btn = tk.Button(chat_panel, text="Send", bg=ACCENT_PINK, fg=TEXT_LIGHT, font=("Segoe UI", 9, "bold"), relief="flat", command=handle_send)
 
-
-# --- Giriş (Login) Ekranı Görsel Bileşenleri (Widgets) ---
 login_frame = tk.Frame(root, bg=BG_MAIN)
 login_frame.place(x=0, y=0, relwidth=1, relheight=1)
 

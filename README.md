@@ -1,15 +1,15 @@
 # Multi-User Chat System (Project 02)
-
+README , execution guide ve design notlar bu markdown dosyasında toplanmıştır.
 ## 1. Project Structure
 - `chat_server.py`: Main TCP chat server, relay listener, and WebSocket broadcast server.
 - `client.py`: Module which performs all TCP socket related tasks for the client as well as message transmission and reception.
-- `chat_client.py`: Tkinter based GUI client which uses the `client.py` module.
+- `gui_client.py`: Tkinter based GUI client which uses the client.py module.
 - `chat_relay.py`: Optionally running relay server which sits between the client and the main server, adds the `*` prefix to the usernames.
 - `monitor.html`: Webpage to view live server logs and counters via WebSocket.
 - `chat.log`: Text file where all server activity such as connections, disconnections, messages, exceptions, and rate limiting is logged.
 
 ## 2. Installation and Dependencies
-In addition to the Python 3 standard library packages (`socket`, `threading`, `tkinter`, `logging`, `datetime`, `queue`) this project uses only one third-party package, which is `websocket-server`.
+In addition to the Python 3 standard library packages ((socket, threading, tkinter, logging, datetime, subprocess, sys, os)) this project uses only one third-party package, which is `websocket-server`.
 
 To install the necessary dependency execute the following command in the terminal:
 ```bash
@@ -41,7 +41,7 @@ To view the monitoring page, double-click "monitor.html" within the project dire
 Launch a new terminal window and run the following:
 
 ```bash
-python chat_client.py
+python gui_client.py
 ```
 
 You can also use the "+ Open New Client Window" or "+ New Client" buttons available within the client GUI to run multiple clients without opening up new terminal windows.
@@ -56,7 +56,7 @@ Monitoring Web Socket Port (m_port): 9753 (pushes live events to monitor.html us
 
 ##5. Usage: Private Messaging and Relay Connections Public Message:
 Ensure that All (Public) is selected from the user list on the left, type the message, and hit Send or Enter.
-Private Messages:Select any user in the Online user list on the left (the label on top of the text box changes to Private to: <nickname>), and then you can send your message.Or simply type /msg <nickname> <message> in the message window.
+Private Messages:Select any user in the Online user list on the left (the label on top of the text box changes to Private to: <nickname>), and then you can send your message.
 Connecting to IRC via Relay:On the login page, type your nickname and hit "Connect via Relay (38390)", or type 38390 in the TCP Port window and connect.
 
 
@@ -94,7 +94,11 @@ Two Lock objects are created to lock shared data structures:
 Once the client connection ends (Exit) or the window is closed, the user is deleted from online_users and socket closed. Other users are notified and the updated list is broadcasted in the finally: block.
 
 **Rate-Limit Policy and Logging
-Local Log File (`chat.log`):All server activity is recorded in a local text file named `chat.log` created automatically in the same directory where `chat_server.py` is executed[cite: 1]. Using Python's `logging` module, it logs timestamps, event types (`Register`, `General`, `Private`, `Change Name`, `Disconect`, `Error`, `Limation_Of_Messeage`), sender nicknames, target recipients, and message details[cite: 1].
-Rate-Limit Policy: Each user thread tracks its recent message timestamps in a `messege_times` list[cite: 1]. A user can send at most **3 messages within 6 seconds** (covering both public and private messages)[cite: 1]. If a 4th message is sent before the 6-second window expires, the server rejects it, sends `"You try to send many messages!Please wait 6 second"` to the client, and records the event in `chat.log` and the WebSocket monitor[cite: 1].
-Message Counter: Successful public and private messages increment `successfull_messeage_no` by `1` regardless of the number of recipients[cite: 1]. Rejected messages and system events are excluded from this counter[cite: 1].
+Local Log File (`chat.log`):All server activity is recorded in a local text file named `chat.log` created automatically in the same directory where `chat_server.py` is executed Using Python's `logging` module, it logs timestamps, event types (`Register`, `General`, `Private`, `Change Name`, `Disconect`, `Error`, `Limation_Of_Messeage`), sender nicknames, target recipients, and message details.
+Rate-Limit Policy: Each user thread tracks its recent message timestamps in a `messege_times` list A user can send at most **3 messages within 6 seconds** (covering both public and private messages) If a 4th message is sent before the 6-second window expires, the server rejects it, sends `"You try to send many messages!Please wait 6 second"` to the client, and records the event in `chat.log` and the WebSocket monitor.
+Message Counter: Successful public and private messages increment `successfull_messeage_no` by `1` regardless of the number of recipients. Rejected messages and system events are excluded from this counter.
+
+## AI Usage
+AI (Gemini) was used for the GUI design in `gui_client.py` and the HTML/CSS structure in `monitor.html`.
+
 
